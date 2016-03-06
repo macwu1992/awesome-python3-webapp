@@ -1,10 +1,12 @@
-from orm import Model, StringField, IntegerField
+import orm, asyncio
+from models import User
 
-class User(Model):
-    __table__ = 'user'
+def test(loop):
+   yield from orm.create_pool(loop=loop, user='root', password='MAcWu1992', db='awesome')
+   users = User(name='Test', email='test@example.com', passwd='1234567890', image='about:blank')
 
-    id = IntegerField(primary_key = True)
-    name = StringField
+   yield from users.save()
 
-user = User(id=123, name='Michael')
-yield from user.save()
+loop = asyncio.get_event_loop()
+loop.run_until_complete(test(loop))
+loop.close()
