@@ -17,10 +17,12 @@ def create_pool(loop, **kw):
         db = kw['db'],
         charset=kw.get('charset', 'utf8'),
         autocommit=kw.get('autocommit', True),
+        unix_socket=kw.get('unix_socket'),
         maxsize=kw.get('maxsize', 10),
         minsize=kw.get('minsize', 1),
         loop=loop
     )
+    return __pool
 
 #封装select语句
 @asyncio.coroutine
