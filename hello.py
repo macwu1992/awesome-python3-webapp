@@ -2,7 +2,7 @@ import orm, asyncio
 from models import User, Blog
 
 def test(loop):
-   yield from orm.create_pool(loop=loop, user='root', password='', db='awesome')
+   yield from orm.create_pool(loop=loop, user='root', password='root', db='awesome')
    users = User(name='Test1', email='test@example.com1', passwd='12345678901', image='about:blank1')
    blog = Blog(user_id = '123')
 
@@ -10,5 +10,6 @@ def test(loop):
    yield from blog.save()
 
 loop = asyncio.get_event_loop()
-test(loop)
+for x in test(loop):
+   pass
 loop.close()
