@@ -11,7 +11,7 @@ def go():
                                            user='root', password='root',
                                            db='awesome', loop=loop)
 
-    users = User(name='Test1', email='test@example.com1', passwd='12345678901', image='about:blank1')
+    users = User(name='Test', email='test@example.com1', passwd='12345678901', image='about:blank1')
     yield from users.save()
 
     yield from pool.wait_closed()
