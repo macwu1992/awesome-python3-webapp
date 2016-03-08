@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{% extends "layout.html" %}
+{% block body %}
+  <ul class=entries>
+  {% for u in users %}
+    <li><h2>{{ users.email }}</h2>{{ users.name }}
+  {% else %}
+    <li><em>Unbelievable.  No entries here so far</em>
+  {% endfor %}
+  </ul>
+{% endblock %}</title>
+</head>
+<body>
+
+</body>
+</html>
