@@ -26,17 +26,17 @@ def create_pool(loop, **kw):
 
 #封装select语句
 @asyncio.coroutine
-def select(sql, args, size):
+def select(sql, args, *size):
     global __pool
     with (yield from __pool) as conn:
         cur = yield from conn.cursor()
-        yield from cur.excute(sql.replace('?', '%s'), args or ())
+        yield from cur.execute(sql.replace('?', '%s'), args or ())
         if size:
-            rs = yield cur.fetchmany(size)
+            rs = yield from cur.fetchmany(size)
         else:
             rs = yield from cur.fetchall()
         yield from cur.close()
-        logging.info('query result returned %s' % len(rs))
+        print('query result returned %s' % len(rs))
         return rs
 
 #封装Insert,Update,Delete语句
@@ -183,8 +183,10 @@ class Model(dict, metaclass=ModelMetaclass):
                 args.extend(limit)
             else:
                 raise ValueError('Invalid limit value: %s' % str(limit))
+
+        #这里size变量需要设置?
         rs = yield from select(' '.join(sql), args)
-        return [cls(**r) for r in rs]
+        return [r for r in rs]
 
     @classmethod
     @asyncio.coroutine
