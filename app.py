@@ -37,6 +37,19 @@ def init_jinja2(app, **kw):
             env.filters[name] = f
     app['__templating__'] = env
 
+@asyncio.coroutine
+def data_factory(app, handler):
+    @asyncio.coroutine
+    def parse_data(request):
+        if request.method == 'POST':
+            if request.content_type.startswith('application/json'):
+                request.__data__ = yield from request.json()
+                logging.info('request json: %s' % str(request.__data__))
+            elif request.content_type.startswith('application/x-www-form-urlencoded'):
+                request.__data__ = yield from request.post()
+                logging.info('request form: %s' % str(request.__data__))
+        return (yield from handler(request))
+    return parse_data
 
 @asyncio.coroutine
 def logger_factory(app, handler):
@@ -106,7 +119,7 @@ def datetime_filter(t):
 @asyncio.coroutine
 def init(loop):
     yield from orm.create_pool(host='127.0.0.1', port=3306, user='root', password='root', db='awesome', loop=loop)
-    app = web.Application(loop=loop, middlewares=[logger_factory, response_factory])
+    app = web.Application(loop=loop, middlewares=[logger_factory, response_factory, data_factory])
     init_jinja2(app, filters=dict(datetime=datetime_filter))
     add_statics(app)
     add_routes(app, 'handlers')
@@ -117,7 +130,6 @@ def init(loop):
 loop = asyncio.get_event_loop()
 loop.run_until_complete(init(loop))
 loop.run_forever()
-
 
 
 
