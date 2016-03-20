@@ -1,20 +1,22 @@
 #!/Users/Tong/dev_repo/liaoxuefeng_shizhan/awesome-python3-webapp/py34en
 # -*- coding: <utf-8> -*-
 
-import logging;
-
-from coroweb import add_routes, add_statics
-
-logging.basicConfig(level=logging.INFO)
-
-import asyncio, os, json, time
-from datetime import datetime
 
 import orm
-
+import asyncio, os, json, time, logging, hashlib
+logging.basicConfig(level=logging.INFO)
+from datetime import datetime
 from jinja2 import Environment,FileSystemLoader
 from aiohttp import web
 
+from coroweb import add_routes, add_statics
+from config import configs
+from handlers import cookie2user
+
+
+
+COOKIE_NAME = 'awesession'
+_COOKIE_KEY = configs.session.secret
 
 def init_jinja2(app, **kw):
     logging.info('init jinja2...')
@@ -36,6 +38,26 @@ def init_jinja2(app, **kw):
         for name, f in filters.items():
             env.filters[name] = f
     app['__templating__'] = env
+
+@asyncio.coroutine
+def auth_factory(app, handler):
+    @asyncio.coroutine
+    def auth(request):
+        logging.info('check user: %s %s' % (request.method, request.path))
+        request.__user__ = None
+        cookie_str = request.cookies.get(COOKIE_NAME)
+        if cookie_str:
+            user = yield from cookie2user(cookie_str)
+            if user:
+                logging.info('set current user %s' % user['email'])
+                request.__user__ = user
+            if request.path.startswith('/manage/') and (request.__user__ is None or not request.__user__.admin):
+                return web.HTTPFound('/signin')
+        return (yield from handler(request))
+    return auth
+
+
+
 
 @asyncio.coroutine
 def data_factory(app, handler):
@@ -86,6 +108,7 @@ def response_factory(app, handler):
                 resp.content_type = 'application/json;charset=utf-8'
                 return resp
             else:
+                r['__user__'] = request.__user__
                 resp = web.Response(body=app['__templating__'].get_template(template).render(**r).encode('utf-8'))
                 resp.content_type = 'text/html;charset=utf-8'
                 return resp
@@ -119,7 +142,7 @@ def datetime_filter(t):
 @asyncio.coroutine
 def init(loop):
     yield from orm.create_pool(host='127.0.0.1', port=3306, user='root', password='root', db='awesome', loop=loop)
-    app = web.Application(loop=loop, middlewares=[logger_factory, response_factory, data_factory])
+    app = web.Application(loop=loop, middlewares=[logger_factory, response_factory, data_factory, auth_factory])
     init_jinja2(app, filters=dict(datetime=datetime_filter))
     add_statics(app)
     add_routes(app, 'handlers')

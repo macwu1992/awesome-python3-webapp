@@ -44,7 +44,6 @@ def select(sql, args, *size):
             for r in range(len(rs)):
                 for i in range(len(index)):
                     result[r][index[i][0]] = rs[r][i]
-            print(result)
         yield from cur.close()
         print('query result returned %s' % len(rs))
         return result
