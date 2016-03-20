@@ -31,13 +31,23 @@ def select(sql, args, *size):
     with (yield from __pool) as conn:
         cur = yield from conn.cursor()
         yield from cur.execute(sql.replace('?', '%s'), args or ())
+        index = cur.description
+        result = [{}]
+
         if size:
             rs = yield from cur.fetchmany(size)
+            for r in rs:
+                for i in index:
+                    result[i[0]] = r[0]
         else:
             rs = yield from cur.fetchall()
+            for r in range(len(rs)):
+                for i in range(len(index)):
+                    result[r][index[i][0]] = rs[r][i]
+            print(result)
         yield from cur.close()
         print('query result returned %s' % len(rs))
-        return rs
+        return result
 
 #封装Insert,Update,Delete语句
 @asyncio.coroutine
